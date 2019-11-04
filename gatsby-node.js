@@ -5,13 +5,34 @@ const pages = [
   { id: 3, content: '확실히 어렵네요' },
 ];
 
-exports.createPages = ({ actions }) => {
+exports.createPages = async ({ actions, graphql }) => {
   const { createPage } = actions;
   const templateComponent = path.resolve('src/pages/post-templates.js');
-  pages.forEach(page => {
+  const { data, errors } = await graphql(`
+          {
+            allMarkdownRemark {
+              edges {
+                node {
+                  html
+                  frontmatter {
+                    title
+                    date(formatString: "YYYY-MM-DD HH:mm:ss")
+                  }
+                }
+              }
+            }
+          }
+  `);
+  if (errors) {
+    throw errors;
+  }
+  data.allMarkdownRemark.edges.forEach(({ node }) => {
     createPage({
-      path: page.id.toString(),
-      context: "page",
+      path: node.frontmatter.title,
+      context: {
+        html: node.html,
+        title: node.frontmatter.title,
+      },
       component: templateComponent
     })
   })
